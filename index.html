@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Forward Flow</title>
+    <script src="https://unpkg.com/jspsych@7.3.4"></script>
+    <script src="https://unpkg.com/@jspsych-contrib/plugin-pipe"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.2.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-cloze@1.2.1"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-fullscreen@1.2.1"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-instructions@1.1.4"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-html-form@1.0.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-multi-choice@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-slider-response@1.1.3"></script>
+    <link href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css" rel="stylesheet" type="text/css" />
+    <style>
+    /* Inputs grandes para USOS DE PALITOS */
+    .cloze-palitos input[type="text"] {
+        width: 600px !important;
+        height: 20px !important;
+        font-size: 16px !important;
+        padding: 5px !important;
+    }
+
+    /* Inputs grandes para DONACIONES CREATIVAS */
+    .cloze-donaciones input[type="text"] {
+        width: 650px !important;
+        height: 20px !important;
+        font-size: 16px !important;
+        padding: 5px !important;
+    }
+    </style>
+
+</head>
+<body></body>
+<script>
+    
+    window.addEventListener('beforeunload', (event) => {
+    // Cancel the event as stated by the standard.
+        event.preventDefault();
+    // Chrome requires returnValue to be set.
+        event.returnValue = '';
+    });
+
+
+    
+    // initialize jsPsych
+    var jsPsych = initJsPsych({
+        show_progress_bar: true
+        }
+    );
+
+    const start_time = Date.now();
+    jsPsych.data.addProperties({Date: start_time});
+
+    const seed_words = [
+    "PAPEL",
+    "MESA",
+    "OSO",
+    "CAMIÓN",
+    "TORTA",
+    "PLAYA",
+    "AMIGO",
+    "INTERNET",
+    "TRABAJO",
+    "GENTE",
+    "DIFERENCIA"
+    ];
+
+    function makeSectionScreen(titulo, descripcion) {
+    return {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: `
+        <div style="max-width:800px; margin:0 auto; text-align:left;">
+            <h2>${titulo}</h2>
+            <p>${descripcion}</p>
+            <p style="margin-top:20px;">
+            Cuando estés listo, haz clic en <strong>"Comenzar"</strong> para continuar.
+            </p>
+        </div>
+        `,
+        choices: ['Comenzar'],
+        data: { task: "seccion_" + titulo }
+    };
+    }
+
+
+    const subject_words = jsPsych.randomization.sampleWithoutReplacement(seed_words, 2);
+
+    // create timeline 
+    var timeline = [];
+
+    // Subject ID
+    
+    const subject_id = jsPsych.randomization.randomID(10);
+    //const filename = `${subject_id}.csv`; 
+    jsPsych.data.addProperties({ID: subject_id});
+
+    timeline.push({
+        type: jsPsychFullscreen,
+        fullscreen_mode: true,
+        message: '<img src="IMG/logos.svg" style = "max-width:100%; height:auto;"></img><p style= "font-size:30px;"><strong>¡Bienvenido!</strong></p><p style= "font-size:20px;"></p><p>Los responsables de este proyecto de investigación <p><strong>¡AGRADECEN TU PARTICIPACIÓN!</strong> </p> Dr. Julio Llamas Alonso (Universidad Autónoma del Estado de Hidalgo) <br>Dr. Vladimir Huerta Chávez (Universidad Autónoma del Estado de Hidalgo) <br> Dr. Armando Q. Angulo Chavira (Universidad Nacional Autónoma de México)</p>',
+        button_label: "Comenzar"
+    });
+
+ 
+     var consent = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: '<p style="font-size:20px;"><strong>CONSENTIMIENTO INFORMADO</strong></p>' +
+                    '<div style="text-align:left; max-width:720px; margin:0 auto; line-height:1.5;">' +
+                    '<p>Por medio del presente acepto participar en el proyecto de investigación <strong>"Forward Flow en población mexicana"</strong>. Este estudio tiene como objetivo comprender cómo diferentes personas procesan información léxica de manera espontánea.</p>' +
+                    '<p>Mi participación será completamente en línea, tendrá una duración aproximada de <strong>10 minutos</strong> e incluirá un cuestionario sociodemográfico, una prueba de reconocimiento de palabras, una prueba de creatividad y una prueba de producción de palabras.</p>' +
+                    '<p>Soy consciente de que:</p>' +
+                    '<ul>' +
+                    '<li>Mi participación es totalmente voluntaria y puedo detenerla en cualquier momento sin consecuencias.</li>' +
+                    '<li>El estudio no implica riesgos físicos ni psicológicos relevantes.</li>' +
+                    '<li>Los datos que proporcione serán tratados de manera confidencial y utilizados únicamente con fines de investigación.</li>' +
+                    '</ul>' +
+                    '<p>He leído esta información y manifiesto mi decisión libre, consciente y voluntaria de participar.</p>' +
+                    '</div>'
+                    ,
+        choices: ['<strong>Acepto</strong>', 'No acepto'],
+        on_finish: function() {
+            var data = jsPsych.data.get().last(1).values()[0];
+            if(data.response== 1){
+                jsPsych.endExperiment('El experimento finalizó porque no aceptó los términos de participación. Puede cerrar el navegador.');
+            }
+      },
+      data:{stimulus:"Informed consent"}
+    }
+
+    timeline.push(consent); 
+    
+    timeline.push(
+    makeSectionScreen(
+        "Cuestionario sociodemográfico",
+        "En esta sección proporcionarás algunos datos personales. Recuerda que todos los datos son anónimos."
+    )
+    );
+
+    var birthdate = {
+        type: jsPsychSurveyHtmlForm,
+        preamble: 'Fecha de nacimiento:',
+        html: '<p><input type="date" id="dob_1" name="dob_2" value="2000-02-29" required></p>',
+        button_label: "Continuar",
+        data:{stimulus:"Birthday"} 
+    }
+
+    timeline.push(birthdate); 
+
+    var demo_mex = {
+        type: jsPsychSurveyMultiChoice,
+        questions: [{
+            prompt: "¿Eres mexicano?", 
+            name: 'Mex', 
+            options: ['Sí', 'No'], 
+            required: true
+        }],
+        button_label: "Continuar",
+        data:{stimulus:"Mex"}
+    }
+
+    timeline.push(demo_mex);
+    
+    var demo_esp = {
+        type: jsPsychSurveyMultiChoice,
+        questions: [{
+            prompt: "¿Tu lengua materna es el español?", 
+            name: 'Esp', 
+            options: ['Sí', 'No'], 
+            required: true
+        }],
+        button_label: "Continuar",
+        data:{stimulus:"Esp"}
+    }
+
+    timeline.push(demo_esp); 
+
+
+    var demo_sex = {
+        type: jsPsychSurveyMultiChoice,
+        questions: [{
+            prompt: "Sexo biológico:", 
+            name: 'Sex', 
+            options: ['Hombre', 'Mujer','Prefiero no decirlo'], 
+            required: true
+        }],
+        button_label: "Continuar",
+        data:{stimulus:"Sex"}
+    }
+
+    timeline.push(demo_sex); 
+
+    var demo_gender = {
+        type: jsPsychSurveyMultiChoice,
+        questions: [{
+            prompt: "Género:", 
+            name: 'Gender', 
+            options: ['Hombre', 'Mujer','No binario','Prefiero no decirlo'], 
+            required: true
+        }],
+        button_label: "Continuar",
+        data:{stimulus:"Gender"}
+    }
+
+    timeline.push(demo_gender); 
+
+
+    var school = {
+        type: jsPsychSurveyMultiChoice,
+        questions: [
+            {
+            prompt: "¿Cuál es tu grado académico más alto?", 
+            name: 'schooling', 
+            options: ['No estudio',
+                    'Primaria Incompleta', 
+                    'Primaria Incompleta', 
+                    'Primaria Completa', 
+                    'Secundaria Incompleta',
+                    'Secundaria Completa',
+                    'Carrera comercial',
+                    'Carrera técnica',
+                    'Preparatoria Incompleta',
+                    'Preparatoria Completa',
+                    'Licenciatura Incompleta',
+                    'Licenciatura Completa',
+                    'Diplomado o maestría',
+                    'Doctorado'
+                ], 
+            required: true
+            }
+        ],
+        button_label: "Continuar",
+        data:{stimulus:'school'}
+    };
+
+    timeline.push(school);
+
+
+    var demo_field = {
+        type: jsPsychSurveyMultiChoice,
+        questions: [{
+            prompt: "En caso de estudios universitarios especificar el área de conocimiento:", 
+            name: 'field', 
+            options: ['Ciencias biológicas y médicas', 
+            'En Ciencias administrativas y económicos',
+            'Ciencias físicas, matemáticas o ingeniería',
+            'Ciencias sociales y humanidades',
+            'No aplica'
+        ], 
+            required: true
+        }],
+        button_label: "Continuar",
+        data:{stimulus:"field"}
+    }
+
+    timeline.push(demo_field);
+
+    var promedio_prep_slider = {
+    type: jsPsychHtmlSliderResponse,
+    stimulus: `
+        <p style="font-size:20px;">
+        Indica tu <strong>promedio final de preparatoria</strong> usando la escala de abajo.
+        </p>
+        <p>
+        Arrastra el punto hasta el valor que mejor represente tu promedio (de 6.0 a 10.0).
+        </p>
+        <p>
+        Promedio seleccionado: <strong><span id="slider-value">8.0</span></strong>
+        </p>
+    `,
+    min: 6.0,
+    max: 10.0,
+    step: 0.1,
+    start: 8.0,
+    labels: ['6.0', '10.0'],
+    require_movement: true,
+    slider_width: 600,
+    button_label: "Continuar",
+    data: { stimulus: "promedio_prep" },
+
+    on_load: function() {
+        // slider que crea el plugin
+        var slider = document.querySelector('#jspsych-html-slider-response-response');
+        var label  = document.querySelector('#slider-value');
+
+        // valor inicial
+        label.textContent = parseFloat(slider.value).toFixed(1);
+
+        // actualizar mientras se mueve
+        slider.addEventListener('input', function() {
+        label.textContent = parseFloat(slider.value).toFixed(1);
+        });
+    }
+    };
+
+    timeline.push(promedio_prep_slider);
+
+
+
+    var demo_occupation = {
+        type: jsPsychSurveyMultiChoice,
+        questions: [{
+            prompt: "¿Cual es tu ocupación actual?", 
+            name: 'occupation', 
+            options: ['Estudiante', 
+            'Empleado asalariado o trabajador independiente',
+            'Empresario',
+            'No estudio ni trabajo'
+        ], 
+            required: true
+        }],
+        button_label: "Continuar",
+        data:{stimulus:"occupation"}
+    }
+
+    timeline.push(demo_occupation); 
+
+    
+    var ses = {
+        type: jsPsychSurveyMultiChoice,
+        questions: [
+            {
+            prompt: "Pensando en el jefe o jefa de hogar, ¿cuál fue el último año de estudios que aprobó en la escuela? Si tú eres el jefé o jefa de hogar, repite tu escolaridad", 
+            name: 'socio_schooling', 
+            options: ['No estudio',
+                    'Primaria Incompleta', 
+                    'Primaria Incompleta', 
+                    'Primaria Completa', 
+                    'Secundaria Incompleta',
+                    'Secundaria Completa',
+                    'Carrera comercial',
+                    'Carrera técnica',
+                    'Preparatoria Incompleta',
+                    'Preparatoria Completa',
+                    'Licenciatura Incompleta',
+                    'Licenciatura Completa',
+                    'Diplomado o maestría',
+                    'Doctorado'
+                ], 
+            required: true
+            }, 
+            {
+            prompt: "¿Cuántos baños completos con regadera y W.C. (excusado) hay en tu vivienda?", 
+            name: 'socio_bano', 
+            options: ['0', '1', '2 o más'], 
+            required: true
+            },
+            {
+            prompt: "¿Cuántos automóviles o camionetas tienen en su hogar, incluyendo camionetas cerradas, o con cabina o caja?", 
+            name: 'socio_autos', 
+            options: ['0', '1', '2 o más'], 
+            required: true
+            },
+            {
+            prompt: "Sin tomar en cuenta la conexión móvil que pudiera tener desde algún celular ¿este hogar cuenta con internet?", 
+            name: 'socio_bano', 
+            options: ['No tiene', 'Sí tiene'], 
+            required: true
+            },
+            {
+            prompt: "De todas las personas de 14 años o más que viven en el hogar, ¿cuántas trabajaron en el último mes?", 
+            name: 'socio_work', 
+            options: ['0', '1', '2','3','4 o más'], 
+            required: true
+            },
+            {
+            prompt: "En esta vivienda, ¿cuántos cuartos se usan para dormir, sin contar pasillos ni baños?", 
+            name: 'socio_rooms', 
+            options: ['0', '1', '2','3','4 o más'], 
+            required: true
+            }
+        ],
+        button_label: "Continuar",
+        data:{stimulus:'ses'}
+    };
+
+    timeline.push(ses);
+
+    timeline.push(
+    makeSectionScreen(
+        "Tarea de producción de palabras",
+        ""
+    )
+    );
+
+    var instruc = {
+        type: jsPsychInstructions,
+        pages: [
+      `
+      <div style="text-align:left; max-width:720px; margin:0 auto; line-height:1.5;">
+  <h2>INSTRUCCIONES</h2>
+
+  <p>
+    En la parte superior verás la <strong>palabra inicial</strong>. 
+    Tu tarea es completar los recuadros escribiendo la primera palabra que se te venga a la mente 
+    a partir de la palabra anterior.
+  </p>
+
+  <p>Debes escribir en total <strong>20 palabras</strong>, una en cada recuadro.</p>
+
+  <ol>
+    <li>Piensa en la palabra inicial que aparece arriba.</li>
+    <li>Escribe en el primer recuadro <strong>una sola palabra</strong> que te venga a la mente.</li>
+    <li>Después, usa siempre tu <strong>última palabra escrita</strong> como estímulo para la siguiente casilla.</li>
+    <li>Completa los 19 recuadros y pulsa <strong>“Continuar”</strong>.</li>
+  </ol>
+
+  <h3>Reglas</h3>
+  <ul>
+    <li>Una sola <strong>palabra por recuadro</strong> (sin frases, signos ni números).</li>
+    <li>No uses <strong>nombres propios</strong> (personas, marcas, lugares, etc.).</li>
+    <li><strong>No repitas</strong> palabras.</li>
+    <li>Responde de forma <strong>rápida y natural</strong>, sin borrar ni corregir.</li>
+    <li>Si te bloqueas, escribe la <strong>primera palabra</strong> que puedas y continúa.</li>
+  </ul>
+
+  <p><em>No hay respuestas correctas o incorrectas; lo importante es constestar tan fluidamente como puedas.</em></p>
+</div>
+      `
+    ],
+    show_clickable_nav: true,              
+    allow_backward: true,                  
+    button_label_next: "Comenzar",          
+    show_page_number: false,               
+    allow_keys: true,                       
+    };
+    timeline.push(instruc);
+ 
+    
+    subject_words.forEach(function(initial_word) {
+
+    var word_trial = {
+        type: jsPsychCloze,
+        text:
+            '<p style="margin:2px;"><strong>' + initial_word + '</strong></p>' +
+            '<p style="margin:2px;">%%</p>' +
+            '<p style="margin:2px;">%%</p>' +
+            '<p style="margin:2px;">%%</p>' +
+            '<p style="margin:2px;">%%</p>' +
+            '<p style="margin:2px;">%%</p>' +
+            '<p style="margin:2px;">%%</p>' +
+            '<p style="margin:2px;">%%</p>' +
+            '<p style="margin:2px;">%%</p>' +
+            '<p style="margin:2px;">%%</p>' +
+            '<p style="margin:2px;">%%</p>' +
+            '<p style="margin:2px;">%%</p>' +
+            '<p style="margin:2px;">%%</p>' +
+            '<p style="margin:2px;">%%</p>' +
+            '<p style="margin:2px;">%%</p>' +
+            '<p style="margin:2px;">%%</p>' +
+            '<p style="margin:2px;">%%</p>' +
+            '<p style="margin:2px;">%%</p>' +
+            '<p style="margin:2px;">%%</p>' +
+            '<p style="margin:2px;">%%</p>',
+        button_text: "Continuar",
+        allow_blanks: false,
+        data: {
+            initial_word: initial_word   
+        }
+    };
+
+    timeline.push(word_trial);
+
+    });
+
+    timeline.push(
+    makeSectionScreen(
+        "Tarea de creatividad",
+        ""
+    )
+    );
+
+    var usos_palitos = {
+    type: jsPsychCloze,
+    css_classes: ['cloze-palitos'],   // ← clase personalizada
+    text:
+        '<p style="font-size:20px; margin-bottom:10px;">' +
+        '<strong>Imagina que alguien te da una caja de palitos de paleta.</strong><br>' +
+        'En los espacios siguientes, indica <strong>tres posibles usos</strong> para los palitos de paleta.<br>' +
+        'Sé lo más creativo posible.' +
+        '</p>' +
+        '<p style="margin:10px;">%%</p>' +
+        '<p style="margin:10px;">%%</p>' +
+        '<p style="margin:10px;">%%</p>',
+    button_text: "Continuar",
+    allow_blanks: false,
+    data: { task: "UsosPalitos" }
+    };
+
+    timeline.push(usos_palitos);
+
+
+    var donaciones_creativas = {
+    type: jsPsychCloze,
+    css_classes: ['cloze-donaciones'],   // ← clase personalizada
+    text:
+        '<p style="font-size:20px; margin-bottom:10px; text-align:left; max-width:800px; margin-left:auto; margin-right:auto;">' +
+        'Imagina que trabajas para una <strong>organización benéfica</strong> cuyo objetivo es prevenir y curar el cáncer.<br><br>' +
+        'El objetivo actual es pensar en maneras de <strong>aumentar las donaciones caritativas</strong> de la comunidad cercana.<br><br>' +
+        'Tu tarea es generar <strong>tres soluciones creativas</strong> para aumentar las donaciones.' +
+        '</p>' +
+        '<p style="margin:10px;">%%</p>' +
+        '<p style="margin:10px;">%%</p>' +
+        '<p style="margin:10px;">%%</p>',
+    button_text: "Continuar",
+    allow_blanks: false,
+    data: { task: "DonacionesCreativas" }
+    };
+
+    timeline.push(donaciones_creativas);
+
+
+
+    
+    const lextale_items = [
+    { item: "terzo",       is_word: false },
+    { item: "pellizcar",   is_word: true  },
+    { item: "pulmones",    is_word: true  },
+    { item: "batillón",    is_word: false },
+    { item: "zapato",      is_word: true  },
+    { item: "tergiversar", is_word: true  },
+    { item: "pésimo",      is_word: true  },
+    { item: "cadeña",      is_word: false },
+    { item: "hacha",       is_word: true  },
+    { item: "antar",       is_word: false },
+    { item: "cenefa",      is_word: true  },
+    { item: "asesinato",   is_word: true  },
+    { item: "helar",       is_word: true  },
+    { item: "yunque",      is_word: true  },
+    { item: "regar",       is_word: true  },
+    { item: "abracer",     is_word: false },
+    { item: "floroso",     is_word: false },
+    { item: "arsa",        is_word: false },
+    { item: "brecedad",    is_word: false },
+    { item: "ávido",       is_word: true  },
+    { item: "capillo",     is_word: false },
+    { item: "lacayo",      is_word: true  },
+    { item: "lampera",     is_word: false },
+    { item: "látigo",      is_word: true  },
+    { item: "bisagra",     is_word: true  },
+    { item: "secuestro",   is_word: true  },
+    { item: "acutación",   is_word: false },
+    { item: "merodear",    is_word: true  },
+    { item: "decar",       is_word: false },
+    { item: "alardio",     is_word: false },
+    { item: "pandilla",    is_word: true  },
+    { item: "fatacidad",   is_word: false },
+    { item: "pauca",       is_word: false },
+    { item: "aviso",       is_word: true  },
+    { item: "rompido",     is_word: false },
+    { item: "loro",        is_word: true  },
+    { item: "granuja",     is_word: true  },
+    { item: "estornudar",  is_word: true  },
+    { item: "torpe",       is_word: true  },
+    { item: "alfombra",    is_word: true  },
+    { item: "rebuscar",    is_word: true  },
+    { item: "cadallo",     is_word: false },
+    { item: "canela",      is_word: true  },
+    { item: "cuchara",     is_word: true  },
+    { item: "jilguero",    is_word: true  },
+    { item: "martillo",    is_word: true  },
+    { item: "cartinar",    is_word: false },
+    { item: "ladrón",      is_word: true  },
+    { item: "ganar",       is_word: true  },
+    { item: "flamida",     is_word: false },
+    { item: "candado",     is_word: true  },
+    { item: "camisa",      is_word: true  },
+    { item: "vegada",      is_word: false },
+    { item: "fomentar",    is_word: true  },
+    { item: "nevar",       is_word: true  },
+    { item: "musgo",       is_word: true  },
+    { item: "tacaño",      is_word: true  },
+    { item: "plaudir",     is_word: false },
+    { item: "besar",       is_word: true  },
+    { item: "matar",       is_word: true  },
+    { item: "seda",        is_word: true  },
+    { item: "flaco",       is_word: true  },
+    { item: "esposante",   is_word: false },
+    { item: "orgulloso",   is_word: true  },
+    { item: "bizcocho",    is_word: true  },
+    { item: "hacido",      is_word: false },
+    { item: "cabello",     is_word: true  },
+    { item: "alegre",      is_word: true  },
+    { item: "engatusar",   is_word: true  },
+    { item: "temblo",      is_word: false },
+    { item: "polvoriento", is_word: true  },
+    { item: "pemición",    is_word: false },
+    { item: "hervidor",    is_word: true  },
+    { item: "cintro",      is_word: false },
+    { item: "yacer",       is_word: true  },
+    { item: "atar",        is_word: true  },
+    { item: "tiburón",     is_word: true  },
+    { item: "frondoso",    is_word: true  },
+    { item: "tropaje",     is_word: false },
+    { item: "hormiga",     is_word: true  },
+    { item: "pozo",        is_word: true  },
+    { item: "empirador",   is_word: false },
+    { item: "guante",      is_word: true  },
+    { item: "escuto",      is_word: false },
+    { item: "laúd",        is_word: true  },
+    { item: "barato",      is_word: true  },
+    { item: "grodo",       is_word: false },
+    { item: "acantilado",  is_word: true  },
+    { item: "prisa",       is_word: true  },
+    { item: "clavel",      is_word: true  }
+    ];
+
+
+    timeline.push(
+    makeSectionScreen(
+        "Tarea de reconocimeinto de palabras",
+        ""
+    )
+    );
+
+    var lextale_instructions = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus: `
+        <div style="max-width:800px; margin: 0 auto; text-align:left;
+                    max-height:430px; overflow-y:auto; padding-right:10px;">
+
+        <p><strong>Instrucciones</strong></p>
+
+        <p>
+            Este test consta de varias pruebas. En cada una de ellas verás una 
+            <strong>secuencia de letras en español</strong>.
+        </p>
+
+        <p>
+            Tu tarea es decidir si se trata de una <strong>palabra real del español que conoces</strong>.
+            Si piensas que <strong>sí es una palabra del español</strong> que conoces, haz clic en 
+            el botón <strong>“sí”</strong>. Si piensas que <strong>no es una palabra del español</strong> 
+            o no estás seguro, haz clic en <strong>“no”</strong>.
+        </p>
+
+        <p>
+            Si estás seguro de que la palabra existe, aunque no sepas exactamente lo que significa, 
+            puedes responder <strong>“sí”</strong>. Pero si no estás seguro de que sea una palabra 
+            existente, debes responder <strong>“no”</strong>.
+        </p>
+
+        <p>
+            <strong>Importante:</strong> los errores se penalizan. No tiene sentido marcar “sí” 
+            para muchas palabras que no conoces solo para intentar subir la puntuación.
+        </p>
+
+        <p>
+            No hay límite de tiempo estricto, pero responde de forma rápida y segura. 
+            Esta parte del experimento suele durar unos pocos minutos.
+        </p>
+
+        <p>
+            Si todo está claro, puedes pulsar <strong>“Comenzar”</strong> para iniciar el test.
+        </p>
+        </div>
+    `,
+    choices: ['Comenzar']
+    };
+
+    timeline.push(lextale_instructions);
+
+    var lextale_trial = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus: function() {
+        var w = jsPsych.timelineVariable('item');
+        return '<p style="font-size:40px; font-style:italic; margin-top:60px;">'
+                + w +
+            '</p>';
+    },
+    choices: ['no', 'sí'],
+    button_html: [
+        '<button class="jspsych-btn" ' +
+        'style="background-color:red; color:white; font-size:22px; ' +
+        'padding:10px 40px; margin: 40px 20px; border:2px solid black;">%choice%</button>',
+        '<button class="jspsych-btn" ' +
+        'style="background-color:green; color:white; font-size:22px; ' +
+        'padding:10px 40px; margin: 40px 20px; border:2px solid black;">%choice%</button>'
+    ],
+
+    data: {
+        task: 'lextale',
+        item: jsPsych.timelineVariable('item'),
+        is_word: jsPsych.timelineVariable('is_word')
+    },
+
+    on_finish: function(data){
+        data.response_label = data.response === 1 ? "sí" : "no";
+    }
+    };
+
+    var lextale_procedure = {
+    timeline: [lextale_trial],
+    timeline_variables: lextale_items,
+    randomize_order: false  
+    };
+
+    timeline.push(lextale_procedure);
+
+    
+    
+    const save_data = {
+        type: jsPsychPipe,
+        action: "save",
+        experiment_id: "qLqX2Ri5COwC",
+        filename: `${subject_id}.csv`,
+        data_string: ()=>jsPsych.data.get().csv()
+    };
+
+    timeline.push(save_data);
+
+    timeline.push({
+        type: jsPsychFullscreen,
+        fullscreen_mode: false
+    });
+
+        var end_exp = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: '<img src="IMG/logos.svg" style = "max-width:100%; height:auto;"></img><p style= "font-size:30px;"><strong>¡Muchas gracias por participar!</strong></p><p style= "font-size:20px;">Cualquier duda o aclaración puede comunicarse con el Dr. Julio Llamas Alonso al correo electronico: julio_llamas@uaeh.edu.mx.</p>'+
+        '<strong><p> Puede cerrar el navegador una vez que haya enviado sus respuestas</p></strong>',
+        choices: ['Enviar respuestas'],
+        data:{stimulus:"Ending"}
+    }
+
+    timeline.push(end_exp);
+
+
+    jsPsych.run(timeline); 
+
+</script>
+</html>
