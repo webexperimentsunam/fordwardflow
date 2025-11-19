@@ -35,12 +35,16 @@
 <body></body>
 <script>
     
-    window.addEventListener('beforeunload', (event) => {
-    // Cancel the event as stated by the standard.
-        event.preventDefault();
-    // Chrome requires returnValue to be set.
-        event.returnValue = '';
-    });
+    let allowUnload = false;
+
+    function handleBeforeUnload(event) {
+        if (!allowUnload) {
+            event.preventDefault();
+            event.returnValue = '';
+        }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
 
     
@@ -214,7 +218,6 @@
             name: 'schooling', 
             options: ['No estudio',
                     'Primaria Incompleta', 
-                    'Primaria Incompleta', 
                     'Primaria Completa', 
                     'Secundaria Incompleta',
                     'Secundaria Completa',
@@ -354,7 +357,7 @@
             },
             {
             prompt: "Sin tomar en cuenta la conexión móvil que pudiera tener desde algún celular ¿este hogar cuenta con internet?", 
-            name: 'socio_bano', 
+            name: 'socio_internet', 
             options: ['No tiene', 'Sí tiene'], 
             required: true
             },
@@ -452,6 +455,7 @@
             '<p style="margin:2px;">%%</p>' +
             '<p style="margin:2px;">%%</p>' +
             '<p style="margin:2px;">%%</p>' +
+            '<p style="margin:2px;">%%</p>' +
             '<p style="margin:2px;">%%</p>',
         button_text: "Continuar",
         allow_blanks: false,
@@ -477,12 +481,12 @@
     text:
         '<p style="font-size:20px; margin-bottom:10px;">' +
         '<strong>Imagina que alguien te da una caja de palitos de paleta.</strong><br>' +
-        'En los espacios siguientes, indica <strong>tres posibles usos</strong> para los palitos de paleta.<br>' +
+        'En los espacios siguientes, describe <strong>tres posibles usos</strong> para los palitos de paleta (Puedes escribir más de una palabra para cada uso).<br>' +
         'Sé lo más creativo posible.' +
         '</p>' +
-        '<p style="margin:10px;">%%</p>' +
-        '<p style="margin:10px;">%%</p>' +
-        '<p style="margin:10px;">%%</p>',
+        '<p style="margin:20px;">%%</p>' +
+        '<p style="margin:20px;">%%</p>' +
+        '<p style="margin:20px;">%%</p>',
     button_text: "Continuar",
     allow_blanks: false,
     data: { task: "UsosPalitos" }
@@ -500,9 +504,9 @@
         'El objetivo actual es pensar en maneras de <strong>aumentar las donaciones caritativas</strong> de la comunidad cercana.<br><br>' +
         'Tu tarea es generar <strong>tres soluciones creativas</strong> para aumentar las donaciones.' +
         '</p>' +
-        '<p style="margin:10px;">%%</p>' +
-        '<p style="margin:10px;">%%</p>' +
-        '<p style="margin:10px;">%%</p>',
+        '<p style="margin:20px;">%%</p>' +
+        '<p style="margin:20px;">%%</p>' +
+        '<p style="margin:20px;">%%</p>',
     button_text: "Continuar",
     allow_blanks: false,
     data: { task: "DonacionesCreativas" }
@@ -709,23 +713,65 @@
 
     timeline.push(save_data);
 
+    var end_exp = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: `
+            <div style="
+                max-width:800px; 
+                margin:0 auto; 
+                text-align:center; 
+                padding:40px 20px; 
+                border-radius:16px; 
+                border:3px solid #2e7d32; 
+                background-color:#e8f5e9;
+            ">
+                <div style="font-size:60px; margin-bottom:20px;">✅</div>
+                
+                <p style="font-size:34px; font-weight:bold; color:#1b5e20; margin-bottom:10px;">
+                    ¡HAS TERMINADO LA PRUEBA!
+                </p>
+                
+                <p style="font-size:20px; margin-bottom:20px;">
+                    Tus respuestas se han <strong>guardado correctamente</strong>.
+                </p>
+
+                <p style="font-size:18px; margin-bottom:10px;">
+                    Cualquier duda o aclaración, puedes comunicarte con el 
+                    <strong>Dr. Julio Llamas Alonso</strong> al correo:
+                    <br>
+                    <strong>julio_llamas@uaeh.edu.mx</strong>
+                </p>
+
+                <p style="font-size:22px; font-weight:bold; color:#b71c1c; margin-top:30px;">
+                    Ya no hay más preguntas.
+                    <br>
+                    Ahora puedes <span style="text-decoration:underline;">cerrar esta pestaña del navegador</span>.
+                </p>
+            </div>
+        `,
+        choices: ['Finalizar actividad'],
+        data: { stimulus: "Ending" },
+        on_load: function() {
+            // Barra de progreso al 100% para que se note que acabó
+            jsPsych.setProgressBar(1);
+        },
+        on_finish: function() {
+            // Permitir salir sin mensaje
+            allowUnload = true;
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        }
+    };
+
+
+    timeline.push(end_exp);
+    
     timeline.push({
         type: jsPsychFullscreen,
         fullscreen_mode: false
     });
 
-        var end_exp = {
-        type: jsPsychHtmlButtonResponse,
-        stimulus: '<img src="IMG/logos.svg" style = "max-width:100%; height:auto;"></img><p style= "font-size:30px;"><strong>¡Muchas gracias por participar!</strong></p><p style= "font-size:20px;">Cualquier duda o aclaración puede comunicarse con el Dr. Julio Llamas Alonso al correo electronico: julio_llamas@uaeh.edu.mx.</p>'+
-        '<strong><p> Puede cerrar el navegador una vez que haya enviado sus respuestas</p></strong>',
-        choices: ['Enviar respuestas'],
-        data:{stimulus:"Ending"}
-    }
+    jsPsych.run(timeline);
 
-    timeline.push(end_exp);
-
-
-    jsPsych.run(timeline); 
 
 </script>
 </html>
