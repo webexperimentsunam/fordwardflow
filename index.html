@@ -472,40 +472,71 @@
     
     subject_words.forEach(function(initial_word) {
 
-    var word_trial = {
+      var word_trial = {
         type: jsPsychCloze,
         text:
-            '<p style="margin:2px;"><strong>' + initial_word + '</strong></p>' +
-            '<p style="margin:2px;">%%</p>' +
-            '<p style="margin:2px;">%%</p>' +
-            '<p style="margin:2px;">%%</p>' +
-            '<p style="margin:2px;">%%</p>' +
-            '<p style="margin:2px;">%%</p>' +
-            '<p style="margin:2px;">%%</p>' +
-            '<p style="margin:2px;">%%</p>' +
-            '<p style="margin:2px;">%%</p>' +
-            '<p style="margin:2px;">%%</p>' +
-            '<p style="margin:2px;">%%</p>' +
-            '<p style="margin:2px;">%%</p>' +
-            '<p style="margin:2px;">%%</p>' +
-            '<p style="margin:2px;">%%</p>' +
-            '<p style="margin:2px;">%%</p>' +
-            '<p style="margin:2px;">%%</p>' +
-            '<p style="margin:2px;">%%</p>' +
-            '<p style="margin:2px;">%%</p>' +
-            '<p style="margin:2px;">%%</p>' +
-            '<p style="margin:2px;">%%</p>' +
-            '<p style="margin:2px;">%%</p>',
+          '<div style="max-width:600px; margin:0 auto; text-align:left;">' +
+            // palabra inicial
+            '<p style="margin:4px 0; font-size:20px;"><strong>' + initial_word + '</strong></p>' +
+            // colchón para que la barra del teclado no tape el primer input
+            '<div style="height:40px;"></div>' +
+            // 20 casillas
+            '<p style="margin:4px 0;">%%</p>' +
+            '<p style="margin:4px 0;">%%</p>' +
+            '<p style="margin:4px 0;">%%</p>' +
+            '<p style="margin:4px 0;">%%</p>' +
+            '<p style="margin:4px 0;">%%</p>' +
+            '<p style="margin:4px 0;">%%</p>' +
+            '<p style="margin:4px 0;">%%</p>' +
+            '<p style="margin:4px 0;">%%</p>' +
+            '<p style="margin:4px 0;">%%</p>' +
+            '<p style="margin:4px 0;">%%</p>' +
+            '<p style="margin:4px 0;">%%</p>' +
+            '<p style="margin:4px 0;">%%</p>' +
+            '<p style="margin:4px 0;">%%</p>' +
+            '<p style="margin:4px 0;">%%</p>' +
+            '<p style="margin:4px 0;">%%</p>' +
+            '<p style="margin:4px 0;">%%</p>' +
+            '<p style="margin:4px 0;">%%</p>' +
+            '<p style="margin:4px 0;">%%</p>' +
+            '<p style="margin:4px 0;">%%</p>' +
+            '<p style="margin:4px 0;">%%</p>' +
+          '</div>',
         button_text: "Continuar",
         allow_blanks: false,
         data: {
-            initial_word: initial_word   
+          initial_word: initial_word
+        },
+        on_load: function () {
+          // Ajustar inputs creados por jsPsychCloze
+          const inputs = document.querySelectorAll('input[type="text"]');
+    
+          inputs.forEach(function (inp) {
+            // Desactivar cosas de teclado/navegador
+            inp.setAttribute('autocomplete', 'off');
+            inp.setAttribute('autocorrect', 'off');
+            inp.setAttribute('autocapitalize', 'none');
+            inp.setAttribute('spellcheck', 'false');
+    
+            // Nombre poco "sospechoso" para autofill
+            if (!inp.name) {
+              inp.name = 'resp_' + Math.random().toString(36).slice(2);
+            }
+    
+            // Cuando gana foco, centrarlo en pantalla (móvil)
+            inp.addEventListener('focus', function () {
+              setTimeout(function () {
+                inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 300); // pequeño delay para que el teclado ya esté abierto
+            });
+          });
         }
-    };
-
-    timeline.push(word_trial);
-
+      };
+    
+      timeline.push(word_trial);
+    
     });
+
 
     timeline.push(
     makeSectionScreen(
@@ -814,6 +845,7 @@
 
 </script>
 </html>
+
 
 
 
